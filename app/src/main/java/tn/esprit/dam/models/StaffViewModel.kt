@@ -1,0 +1,88 @@
+package tn.esprit.dam.models
+
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import tn.esprit.dam.data.StaffRepository
+import tn.esprit.dam.data.UserRepository
+
+class StaffViewModel : ViewModel() {
+
+    private val staffRepository = StaffRepository()
+    private val userRepository = UserRepository()
+
+    private val _myStaff = MutableStateFlow<List<Arbitre>>(emptyList())
+    val myStaff: StateFlow<List<Arbitre>> = _myStaff
+
+    private val _searchResults = MutableStateFlow<List<Arbitre>>(emptyList())
+    val searchResults: StateFlow<List<Arbitre>> = _searchResults
+
+    val isLoading = mutableStateOf(false)
+    val errorMessage = mutableStateOf<String?>(null)
+
+    private var searchJob: Job? = null
+
+    fun fetchMyStaff(idAcademie: String) {
+        viewModelScope.launch {
+            isLoading.value = true
+            errorMessage.value = null
+            try {
+                _myStaff.value = staffRepository.getArbitres(idAcademie)
+            } catch (e: Exception) {
+                errorMessage.value = "Failed to fetch staff: ${e.message}"
+                _myStaff.value = emptyList()
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    fun searchArbitres(query: String) {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            if (query.length < 2) {
+                _searchResults.value = emptyList()
+                isLoading.value = false
+                return@launch
+            }
+            isLoading.value = true
+            errorMessage.value = null
+            delay(300)
+            try {
+                _searchResults.value = userRepository.searchArbitres(query)
+            } catch (e: Exception) {
+                errorMessage.value = "Failed to search referees: ${e.message}"
+                _searchResults.value = emptyList()
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    fun addArbitreToMyStaff(idAcademie: String, idArbitre: String) {
+        viewModelScope.launch {
+            try {
+                staffRepository.addArbitre(idAcademie, idArbitre)
+                fetchMyStaff(idAcademie)
+            } catch (e: Exception) {
+                errorMessage.value = "Failed to add referee: ${e.message}"
+            }
+        }
+    }
+
+    fun removeArbitreFromMyStaff(idAcademie: String, idArbitre: String) {
+        viewModelScope.launch {
+            try {
+                staffRepository.removeArbitre(idAcademie, idArbitre)
+                fetchMyStaff(idAcademie)
+            } catch (e: Exception) {
+                errorMessage.value = "Failed to remove referee: ${e.message}"
+            }
+        }
+    }
+}
