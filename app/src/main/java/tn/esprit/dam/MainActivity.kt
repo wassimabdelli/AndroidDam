@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import tn.esprit.dam.screens.CreateStadiumScreen
 import tn.esprit.dam.screens.CreateTournamentScreen
 import tn.esprit.dam.screens.EventsScreen
 import tn.esprit.dam.screens.ForgetPasswordScreen
@@ -40,6 +41,7 @@ import tn.esprit.dam.screens.WelcomeScreen3
 import tn.esprit.dam.screens.DetailMatchScreen
 import tn.esprit.dam.screens.SeeMatchScreen
 import tn.esprit.dam.screens.EditMaillotScreen
+import tn.esprit.dam.screens.StadiumsListScreen
 import tn.esprit.dam.ui.theme.DAMTheme
 
 class MainActivity : ComponentActivity() {
@@ -270,6 +272,22 @@ class MainActivity : ComponentActivity() {
                         PlanScreen(navController = navController, userId = userId, nom = nom, prenom = prenom)
                     }
 
+
+
+                    composable(
+                        route = "StadiumsListScreen",
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) {
+                        StadiumsListScreen(navController = navController)
+                    }
+                    composable(
+                        route = "CreateStadiumScreen",
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) {
+                        CreateStadiumScreen(navController = navController)
+                    }
                     // CONSOLIDATED PROFILE SCREEN ROUTE: This is now the definitive profile screen.
                     composable(
                         route = "ProfileScreen",

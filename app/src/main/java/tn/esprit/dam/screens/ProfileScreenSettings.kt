@@ -88,6 +88,10 @@ fun ProfileScreenSettings(
             listItems.add(
                 SettingItemData(Icons.Default.PersonAdd, "Recruter arbitre", colorScheme.primary)
             )
+            // Ajouter "Stadiums" aussi pour OWNER
+            listItems.add(
+                SettingItemData(Icons.Default.Stadium, "Stadiums", colorScheme.secondary)
+            )
             listItems.add(
                 SettingItemData(Icons.Default.GroupAdd, "Recruter joueurs", colorScheme.primary)
             )
@@ -366,6 +370,8 @@ private fun SettingsListItem(
             navController.navigate("RecruteScreen")
         } else if (item.title == "Recruter joueurs") {
             navController.navigate("Negotiation")
+        } else if (item.title == "Stadiums") {
+            navController.navigate("StadiumsListScreen")
         } else if (item.title == "Negotiation") {
             navController.navigate("Negotiation")
         }
