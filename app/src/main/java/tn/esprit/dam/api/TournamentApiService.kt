@@ -60,6 +60,10 @@ data class MatchDto(
     val date: String,
     val score_eq1: Int,
     val score_eq2: Int,
+    val corner_eq1: Int = 0,
+    val corner_eq2: Int = 0,
+    val penalty_eq1: Int = 0,
+    val penalty_eq2: Int = 0,
     val statut: String,
     val round: Int,
     val nextMatch: String?,
@@ -78,6 +82,18 @@ data class UpdateMatchDto(
 )
 
 data class AddParticipantRequest(val userId: String)
+
+data class AddStatRequest(
+    val idJoueur: String,
+    val equipe: String,
+    val type: String
+)
+
+data class AddCartonRequest(
+    val idJoueur: String,
+    val categorie: String,
+    val color: String
+)
 
 // Data class for the response of generate-bracket
 data class GenerateBracketResponse(
@@ -138,4 +154,55 @@ interface TournamentApiService {
         @Body updateMatchDto: UpdateMatchDto,
         @Header("Authorization") authHeader: String
     ): Response<Unit>
+
+    @PATCH("matches/corner/{matchId}/{idAcademie}")
+    suspend fun incrementCorner(
+        @Path("matchId") matchId: String,
+        @Path("idAcademie") idAcademie: String,
+        @Header("Authorization") authHeader: String
+    ): Response<MatchDto>
+
+    @PATCH("matches/penalty/{matchId}/{idAcademie}")
+    suspend fun incrementPenalty(
+        @Path("matchId") matchId: String,
+        @Path("idAcademie") idAcademie: String,
+        @Header("Authorization") authHeader: String
+    ): Response<MatchDto>
+
+    @POST("/api/v1/matches/{matchId}/stat")
+    suspend fun addStatToMatch(
+        @Path("matchId") matchId: String,
+        @Body request: AddStatRequest,
+        @Header("Authorization") authHeader: String
+    ): Response<MatchDto>
+
+    @POST("/api/v1/matches/add-offside/{matchId}/{idAcademie}/{idJoueur}")
+    suspend fun addOffside(
+        @Path("matchId") matchId: String,
+        @Path("idAcademie") idAcademie: String,
+        @Path("idJoueur") idJoueur: String,
+        @Header("Authorization") authHeader: String
+    ): Response<MatchDto>
+
+    @POST("/api/v1/matches/{matchId}/carton")
+    suspend fun addCartonToMatch(
+        @Path("matchId") matchId: String,
+        @Body request: AddCartonRequest,
+        @Header("Authorization") authHeader: String
+    ): Response<MatchDto>
+
+    @GET("/api/v1/matches/{matchId}/scorers/{idAcademie}")
+    suspend fun getScorersByAcademie(
+        @Path("matchId") matchId: String,
+        @Path("idAcademie") idAcademie: String,
+        @Header("Authorization") authHeader: String
+    ): Response<List<UserDto>>
+
+    @GET("/api/v1/matches/{matchId}/cards/{idAcademie}/{color}")
+    suspend fun getCardsByAcademie(
+        @Path("matchId") matchId: String,
+        @Path("idAcademie") idAcademie: String,
+        @Path("color") color: String,
+        @Header("Authorization") authHeader: String
+    ): Response<List<UserDto>>
 }

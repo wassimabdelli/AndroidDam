@@ -1,7 +1,6 @@
 package tn.esprit.dam
 
 import android.os.Bundle
-import android.util.Log // Import Log for better debugging
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,11 +17,12 @@ import tn.esprit.dam.screens.EventsScreen
 import tn.esprit.dam.screens.ForgetPasswordScreen
 import tn.esprit.dam.screens.FriendsScreen
 import tn.esprit.dam.screens.HomeScreen
-import tn.esprit.dam.screens.LeaderboardScreen
 import tn.esprit.dam.screens.LoginScreen
 import tn.esprit.dam.screens.MyStaffScreen
+import tn.esprit.dam.screens.Negotiation
 import tn.esprit.dam.screens.PasswordChangedScreen
 import tn.esprit.dam.screens.PlacmentScreen
+import tn.esprit.dam.screens.PlanScreen
 import tn.esprit.dam.screens.ProfileScreen // Keep this import
 import tn.esprit.dam.screens.ProfileScreenSettings
 import tn.esprit.dam.screens.RecruteScreen
@@ -32,12 +32,14 @@ import tn.esprit.dam.screens.SocialScreen
 import tn.esprit.dam.screens.SplashScreen
 import tn.esprit.dam.screens.TeamsScreen
 import tn.esprit.dam.screens.TournamentCreateForumScreen
-import tn.esprit.dam.screens.TournamentDetails // Import the data class for the callback
 import tn.esprit.dam.screens.VerificationScreen
 import tn.esprit.dam.screens.VerificationResetScreen
 import tn.esprit.dam.screens.WelcomeScreen1
 import tn.esprit.dam.screens.WelcomeScreen2
 import tn.esprit.dam.screens.WelcomeScreen3
+import tn.esprit.dam.screens.DetailMatchScreen
+import tn.esprit.dam.screens.SeeMatchScreen
+import tn.esprit.dam.screens.EditMaillotScreen
 import tn.esprit.dam.ui.theme.DAMTheme
 
 class MainActivity : ComponentActivity() {
@@ -140,6 +142,13 @@ class MainActivity : ComponentActivity() {
                         exitTransition = { slideOutAnimation }
                     ) {
                         RecruteScreen(navController = navController)
+                    }
+                    composable(
+                        route = "Negotiation",
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) {
+                        Negotiation(navController = navController)
                     }
                     composable(
                         route = "MyStaffScreen",
@@ -245,6 +254,21 @@ class MainActivity : ComponentActivity() {
                     ) {
                         PlacmentScreen(navController = navController)
                     }
+                    composable(
+                        route = "PlanScreen/{userId}/{nom}/{prenom}",
+                        arguments = listOf(
+                            navArgument("userId") { type = NavType.StringType },
+                            navArgument("nom") { type = NavType.StringType },
+                            navArgument("prenom") { type = NavType.StringType }
+                        ),
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) { backStackEntry ->
+                        val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                        val nom = backStackEntry.arguments?.getString("nom") ?: ""
+                        val prenom = backStackEntry.arguments?.getString("prenom") ?: ""
+                        PlanScreen(navController = navController, userId = userId, nom = nom, prenom = prenom)
+                    }
 
                     // CONSOLIDATED PROFILE SCREEN ROUTE: This is now the definitive profile screen.
                     composable(
@@ -289,6 +313,85 @@ class MainActivity : ComponentActivity() {
                         exitTransition = { slideOutAnimation }
                     ) {
                         PasswordChangedScreen(navController = navController)
+                    }
+
+                    composable(
+                        route = "DetailMatch/{matchId}/{eq1Id}/{eq2Id}",
+                        arguments = listOf(
+                            navArgument("matchId") { type = NavType.StringType },
+                            navArgument("eq1Id") { type = NavType.StringType },
+                            navArgument("eq2Id") { type = NavType.StringType }
+                        ),
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) { backStackEntry ->
+                        val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
+                        val eq1Id = backStackEntry.arguments?.getString("eq1Id") ?: ""
+                        val eq2Id = backStackEntry.arguments?.getString("eq2Id") ?: ""
+                        DetailMatchScreen(navController = navController, matchId = matchId, eq1Id = eq1Id, eq2Id = eq2Id)
+                    }
+                    composable(
+                        route = "DetailMatch/{matchId}/{eq1Id}/{eq2Id}/{categorie}",
+                        arguments = listOf(
+                            navArgument("matchId") { type = NavType.StringType },
+                            navArgument("eq1Id") { type = NavType.StringType },
+                            navArgument("eq2Id") { type = NavType.StringType },
+                            navArgument("categorie") { type = NavType.StringType }
+                        ),
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) { backStackEntry ->
+                        val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
+                        val eq1Id = backStackEntry.arguments?.getString("eq1Id") ?: ""
+                        val eq2Id = backStackEntry.arguments?.getString("eq2Id") ?: ""
+                        val categorie = backStackEntry.arguments?.getString("categorie")
+                        DetailMatchScreen(navController = navController, matchId = matchId, eq1Id = eq1Id, eq2Id = eq2Id, coupeCategorie = categorie)
+                    }
+                    composable(
+                        route = "SeeMatch/{matchId}/{eq1Id}/{eq2Id}",
+                        arguments = listOf(
+                            navArgument("matchId") { type = NavType.StringType },
+                            navArgument("eq1Id") { type = NavType.StringType },
+                            navArgument("eq2Id") { type = NavType.StringType }
+                        ),
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) { backStackEntry ->
+                        val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
+                        val eq1Id = backStackEntry.arguments?.getString("eq1Id") ?: ""
+                        val eq2Id = backStackEntry.arguments?.getString("eq2Id") ?: ""
+                        SeeMatchScreen(navController = navController, matchId = matchId, eq1Id = eq1Id, eq2Id = eq2Id)
+                    }
+                    composable(
+                        route = "SeeMatch/{matchId}/{eq1Id}/{eq2Id}/{categorie}",
+                        arguments = listOf(
+                            navArgument("matchId") { type = NavType.StringType },
+                            navArgument("eq1Id") { type = NavType.StringType },
+                            navArgument("eq2Id") { type = NavType.StringType },
+                            navArgument("categorie") { type = NavType.StringType }
+                        ),
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) { backStackEntry ->
+                        val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
+                        val eq1Id = backStackEntry.arguments?.getString("eq1Id") ?: ""
+                        val eq2Id = backStackEntry.arguments?.getString("eq2Id") ?: ""
+                        val categorie = backStackEntry.arguments?.getString("categorie")
+                        SeeMatchScreen(navController = navController, matchId = matchId, eq1Id = eq1Id, eq2Id = eq2Id, coupeCategorie = categorie)
+                    }
+
+                    composable(
+                        route = "EditMaillot/{academieId}/{joueurId}",
+                        arguments = listOf(
+                            navArgument("academieId") { type = NavType.StringType },
+                            navArgument("joueurId") { type = NavType.StringType }
+                        ),
+                        enterTransition = { slideInAnimation },
+                        exitTransition = { slideOutAnimation }
+                    ) { backStackEntry ->
+                        val academieId = backStackEntry.arguments?.getString("academieId") ?: ""
+                        val joueurId = backStackEntry.arguments?.getString("joueurId") ?: ""
+                        EditMaillotScreen(navController = navController, academieId = academieId, joueurId = joueurId)
                     }
                 }
             }

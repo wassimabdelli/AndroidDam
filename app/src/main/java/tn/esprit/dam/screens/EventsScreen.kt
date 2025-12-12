@@ -389,7 +389,7 @@ fun EventsScreen(navController: NavHostController) { // <-- Changed type to NavH
     Crossfade(targetState = selectedEvent, label = "ScreenCrossfade") { event ->
         when {
             showMatchCoupeScreen && event != null -> {
-                MatchCoupeScreen(coupeId = event.id, matches = event.matches, onBackClick = {
+                MatchCoupeScreen(navController = navController, coupeId = event.id, matches = event.matches, onBackClick = {
                     showMatchCoupeScreen = false
                 })
             }

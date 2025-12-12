@@ -53,6 +53,7 @@ fun RecruteScreen(
 ) {
     val searchResults by viewModel.searchResults.collectAsState()
     val myStaff by viewModel.myStaff.collectAsState()
+    val coachMembership by viewModel.coachMembership.collectAsState()
     val isLoading by viewModel.isLoading
     val errorMessage by viewModel.errorMessage
 
@@ -77,7 +78,7 @@ fun RecruteScreen(
 
     // Trigger search when query changes
     LaunchedEffect(searchQuery) {
-        viewModel.searchArbitres(searchQuery)
+        viewModel.searchCoachsArbitres(searchQuery)
     }
 
     // A set of my staff IDs for efficient lookup
@@ -88,7 +89,7 @@ fun RecruteScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chercher un Arbitre", fontWeight = FontWeight.Bold) },
+                title = { Text("Chercher un Arbitre ou Coach", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour")
@@ -135,7 +136,7 @@ fun RecruteScreen(
 
                     searchResults.isEmpty() && searchQuery.isNotBlank() -> {
                         Text(
-                            "Aucun arbitre trouvé pour \"$searchQuery\".",
+                            "Aucun résultat trouvé pour \"$searchQuery\".",
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
@@ -153,12 +154,24 @@ fun RecruteScreen(
                             contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
                         ) {
                             items(searchResults, key = { it.id }) { arbitre ->
+                                val isCoach = arbitre.role == "COACH"
+                                val isAlready = if (isCoach) coachMembership[arbitre.id] == true else arbitre.id in myStaffIds
+                                val app = context.applicationContext as Application
+                                LaunchedEffect(arbitre.id, idAcademie, isCoach) {
+                                    if (isCoach && idAcademie != null && coachMembership[arbitre.id] == null) {
+                                        viewModel.checkCoachMembership(app, idAcademie!!, arbitre.id)
+                                    }
+                                }
                                 ArbitreCard(
                                     arbitre = arbitre,
-                                    isAlreadyInStaff = arbitre.id in myStaffIds,
+                                    isAlreadyInStaff = isAlready,
                                     onAddClick = {
                                         idAcademie?.let { academieId ->
-                                            viewModel.addArbitreToMyStaff(academieId, arbitre.id)
+                                            if (isCoach) {
+                                                viewModel.addCoachToMyStaff(app, academieId, arbitre.id)
+                                            } else {
+                                                viewModel.addArbitreToMyStaff(academieId, arbitre.id)
+                                            }
                                         }
                                     }
                                 )
@@ -209,6 +222,14 @@ private fun ArbitreCard(
                     text = arbitre.email,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+                val roleLabel = if (arbitre.role.equals("COACH", ignoreCase = true)) "Coach" else "Arbitre"
+                val roleIcon = if (arbitre.role.equals("COACH", ignoreCase = true)) Icons.Default.Groups else Icons.Default.Person
+                Spacer(modifier = Modifier.height(6.dp))
+                AssistChip(
+                    onClick = {},
+                    label = { Text(roleLabel) },
+                    leadingIcon = { Icon(roleIcon, contentDescription = null) }
                 )
             }
             if (isAlreadyInStaff) {

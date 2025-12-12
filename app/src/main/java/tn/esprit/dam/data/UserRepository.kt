@@ -17,4 +17,8 @@ class UserRepository {
     suspend fun searchArbitres(query: String): List<Arbitre> {
         return userService.searchArbitres(query)
     }
+
+    suspend fun searchCoachsArbitres(query: String): List<Arbitre> {
+        return userService.searchCoachsArbitres(query)
+    }
 }

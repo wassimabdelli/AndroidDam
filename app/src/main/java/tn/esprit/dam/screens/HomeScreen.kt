@@ -33,6 +33,7 @@ import tn.esprit.dam.screens.cards.GameListItem
 import tn.esprit.dam.screens.cards.MainGreenCard
 import tn.esprit.dam.ui.theme.* // Keeping this to resolve dependencies if needed, but not using custom Colors directly
 import tn.esprit.dam.components.HomeBottomNavigationBar
+import android.net.Uri
 
 
 // --- Data & Main Content Extracted (Unchanged) ---
@@ -46,11 +47,32 @@ private val gameList = listOf(
 
 // NEW: Extracted the main content Column to avoid Scaffold/NavHostController issues in preview
 @Composable
-fun HomeContent(paddingValues: PaddingValues = PaddingValues(0.dp)) {
+fun HomeContent(paddingValues: PaddingValues = PaddingValues(0.dp), onGamePlanClick: (String) -> Unit = {}) {
     val topBackgroundColor = MaterialTheme.colorScheme.background
     val listBackgroundColor = MaterialTheme.colorScheme.surface
 
     // Make the whole content scrollable
+    val context = LocalContext.current
+    var currentUserId by remember { mutableStateOf<String?>(null) }
+    var currentUserNom by remember { mutableStateOf<String?>(null) }
+    var currentUserPrenom by remember { mutableStateOf<String?>(null) }
+    var currentUserRole by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        try {
+            val app = context.applicationContext as android.app.Application
+            val repo = tn.esprit.dam.data.AuthRepository(app)
+            val user = repo.getUser()
+            currentUserId = user?._id
+            currentUserNom = user?.nom
+            currentUserPrenom = user?.prenom
+            currentUserRole = user?.role
+        } catch (_: Exception) {
+            currentUserId = null
+            currentUserNom = null
+            currentUserPrenom = null
+            currentUserRole = null
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -71,6 +93,59 @@ fun HomeContent(paddingValues: PaddingValues = PaddingValues(0.dp)) {
         ) {
             Spacer(modifier = Modifier.height(12.dp))
             MainGreenCard()
+            if (currentUserRole == "OWNER") {
+                val encodedId = Uri.encode(currentUserId ?: "")
+                val encodedNom = Uri.encode(currentUserNom ?: "")
+                val encodedPrenom = Uri.encode(currentUserPrenom ?: "")
+                Card(
+                    onClick = {
+                        if (currentUserId != null) {
+                            onGamePlanClick("PlanScreen/$encodedId/$encodedNom/$encodedPrenom")
+                        }
+                    },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Event,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    "Game Plan",
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "Choisissez votre composition",
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                        Icon(
+                            Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+            }
 
             TabBar()
 
@@ -99,7 +174,7 @@ fun HomeScreen(navController: NavHostController) {
         modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize()) {
-            HomeContent(paddingValues)
+            HomeContent(paddingValues, onGamePlanClick = { route -> navController.navigate(route) })
         }
     }
 }

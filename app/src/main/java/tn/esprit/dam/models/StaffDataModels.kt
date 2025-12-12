@@ -11,6 +11,15 @@ data class Arbitre(
     val role: String
 )
 
+data class Coach(
+    @SerializedName("_id") val id: String,
+    val nom: String,
+    val prenom: String,
+    val picture: String?,
+    val email: String,
+    val role: String
+)
+
 // Response for GET requests, expects full Arbitre objects
 data class StaffResponse(
     @SerializedName("id_academie") val idAcademie: String,
@@ -26,4 +35,8 @@ data class StaffUpdateResponse(
 
 data class AddArbitreRequest(
     @SerializedName("idArbitre") val idArbitre: String
+)
+
+data class CoachExistsResponse(
+    @SerializedName("isCoach") val exists: Boolean
 )

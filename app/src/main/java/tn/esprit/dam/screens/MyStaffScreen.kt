@@ -37,6 +37,8 @@ import kotlin.let
 import kotlin.text.contains
 import kotlin.text.isBlank
 
+import tn.esprit.dam.models.Coach
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyStaffScreen(
@@ -44,6 +46,7 @@ fun MyStaffScreen(
     viewModel: StaffViewModel = viewModel()
 ) {
     val myStaff by viewModel.myStaff.collectAsState()
+    val myCoaches by viewModel.myCoaches.collectAsState()
     val isLoading by viewModel.isLoading
     val errorMessage by viewModel.errorMessage
 
@@ -52,6 +55,8 @@ fun MyStaffScreen(
     val context = LocalContext.current
 
     var arbitreToDelete by remember { mutableStateOf<Arbitre?>(null) }
+    var coachToDelete by remember { mutableStateOf<Coach?>(null) }
+    var selectedTab by remember { mutableIntStateOf(0) } // 0 for Arbitres, 1 for Coaches
 
     LaunchedEffect(Unit) {
         val user = try {
@@ -72,6 +77,18 @@ fun MyStaffScreen(
             myStaff
         } else {
             myStaff.filter {
+                val fullName = "${it.prenom} ${it.nom}"
+                fullName.contains(localSearchQuery, ignoreCase = true) ||
+                        it.email.contains(localSearchQuery, ignoreCase = true)
+            }
+        }
+    }
+
+    val filteredLocalCoaches = remember(localSearchQuery, myCoaches) {
+        if (localSearchQuery.isBlank()) {
+            myCoaches
+        } else {
+            myCoaches.filter {
                 val fullName = "${it.prenom} ${it.nom}"
                 fullName.contains(localSearchQuery, ignoreCase = true) ||
                         it.email.contains(localSearchQuery, ignoreCase = true)
@@ -100,6 +117,28 @@ fun MyStaffScreen(
         )
     }
 
+    if (coachToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { coachToDelete = null },
+            title = { Text("Confirmer la suppression") },
+            text = { Text("Voulez-vous vraiment retirer ${coachToDelete!!.prenom} ${coachToDelete!!.nom} de votre staff ?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        idAcademie?.let {
+                            val app = context.applicationContext as Application
+                            viewModel.removeCoachFromMyStaff(app, it, coachToDelete!!.id)
+                        }
+                        coachToDelete = null
+                    }
+                ) { Text("Supprimer") }
+            },
+            dismissButton = {
+                Button(onClick = { coachToDelete = null }) { Text("Annuler") }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -113,43 +152,80 @@ fun MyStaffScreen(
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
-            OutlinedTextField(
-                value = localSearchQuery,
-                onValueChange = { localSearchQuery = it },
-                label = { Text("Chercher dans mon staff...") },
-                leadingIcon = { Icon(Icons.Default.Search, "Search Icon") },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                singleLine = true
-            )
+            TabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Arbitres") }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Coachs") }
+                )
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                OutlinedTextField(
+                    value = localSearchQuery,
+                    onValueChange = { localSearchQuery = it },
+                    label = { Text("Chercher dans mon staff...") },
+                    leadingIcon = { Icon(Icons.Default.Search, "Search Icon") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    singleLine = true
+                )
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                when {
-                    isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                    errorMessage != null -> Text(
-                        "Erreur: $errorMessage",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    myStaff.isEmpty() && !isLoading -> Text(
-                        "Votre staff est vide.",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-
-                    else -> {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
-                        ) {
-                            items(filteredLocalArbitres, key = { it.id }) { arbitre ->
-                                ArbitreInfoCard(
-                                    arbitre = arbitre,
-                                    onDeleteClick = { arbitreToDelete = arbitre }
-                                )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when {
+                        isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        errorMessage != null -> Text(
+                            "Erreur: $errorMessage",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                        else -> {
+                            if (selectedTab == 0) {
+                                if (filteredLocalArbitres.isEmpty()) {
+                                    Text(
+                                        "Aucun arbitre trouvé.",
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                } else {
+                                    LazyColumn(
+                                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                                    ) {
+                                        items(filteredLocalArbitres, key = { it.id }) { arbitre ->
+                                            ArbitreInfoCard(
+                                                arbitre = arbitre,
+                                                onDeleteClick = { arbitreToDelete = arbitre }
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                if (filteredLocalCoaches.isEmpty()) {
+                                    Text(
+                                        "Aucun coach trouvé.",
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                } else {
+                                    LazyColumn(
+                                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                                    ) {
+                                        items(filteredLocalCoaches, key = { it.id }) { coach ->
+                                            CoachInfoCard(
+                                                coach = coach,
+                                                onDeleteClick = { coachToDelete = coach }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -163,7 +239,7 @@ fun MyStaffScreen(
 private fun ArbitreInfoCard(arbitre: Arbitre, onDeleteClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Row(
@@ -193,6 +269,54 @@ private fun ArbitreInfoCard(arbitre: Arbitre, onDeleteClick: () -> Unit) {
                     arbitre.email,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+            IconButton(onClick = onDeleteClick) {
+                Icon(Icons.Default.Delete, "Supprimer", tint = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoachInfoCard(coach: Coach, onDeleteClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(48.dp).clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = coach.prenom.take(1).uppercase() + coach.nom.take(1).uppercase(),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "${coach.prenom} ${coach.nom}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    coach.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
+                Text(
+                    coach.role,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
             IconButton(onClick = onDeleteClick) {

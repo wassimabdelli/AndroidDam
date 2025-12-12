@@ -16,4 +16,7 @@ interface UserService {
      */
     @GET("users/search/arbitres")
     suspend fun searchArbitres(@Query("q") query: String): List<Arbitre>
+
+    @GET("users/search/coachs-arbitres")
+    suspend fun searchCoachsArbitres(@Query("q") query: String): List<Arbitre>
 }

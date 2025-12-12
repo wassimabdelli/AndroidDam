@@ -31,15 +31,15 @@ import tn.esprit.dam.api.TournamentApiService
 import tn.esprit.dam.api.UpdateMatchDto
 import tn.esprit.dam.data.AuthRepository
 import tn.esprit.dam.data.RetrofitClient
+import androidx.navigation.NavHostController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MatchCoupeScreen(coupeId: String, matches: List<Any>, onBackClick: () -> Unit) {
+fun MatchCoupeScreen(navController: NavHostController, coupeId: String, matches: List<Any>, onBackClick: () -> Unit) {
     var matchesDetails by remember { mutableStateOf<List<MatchDto>>(emptyList()) }
     var teamNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var isArbitre by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var selectedMatch by remember { mutableStateOf<MatchDto?>(null) }
+    var coupeCategorie by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -83,22 +83,15 @@ fun MatchCoupeScreen(coupeId: String, matches: List<Any>, onBackClick: () -> Uni
         val user = withContext(Dispatchers.IO) { repo.getUser() }
         isArbitre = user?.role == "ARBITRE"
         refreshData()
+        try {
+            val jwt = withContext(Dispatchers.IO) { repo.getToken() }
+            val api = RetrofitClient.getRetrofit(context).create(TournamentApiService::class.java)
+            val coupesResponse = api.getCoupesWithAuth("Bearer $jwt")
+            coupeCategorie = coupesResponse.body()?.find { it._id == coupeId }?.categorie
+        } catch (_: Exception) { }
     }
 
-    if (showEditDialog && selectedMatch != null) {
-        EditMatchDialog(
-            match = selectedMatch!!,
-            teamNames = teamNames,
-            onDismiss = { showEditDialog = false },
-            onConfirm = {
-                showEditDialog = false
-                coroutineScope.launch {
-                    kotlinx.coroutines.delay(500) // Delay to ensure backend has processed the promotion
-                    refreshData()
-                }
-            }
-        )
-    }
+
 
     Scaffold(
         topBar = {
@@ -141,9 +134,12 @@ fun MatchCoupeScreen(coupeId: String, matches: List<Any>, onBackClick: () -> Uni
                         isFinalRound = round == groupedMatches.keys.last(),
                         isArbitre = isArbitre,
                         onMatchClick = { match ->
-                            if (isArbitre) {
-                                selectedMatch = match
-                                showEditDialog = true
+                            val eq1 = match.id_equipe1 ?: ""
+                            val eq2 = match.id_equipe2 ?: ""
+                            if (isArbitre && match.statut != "TERMINE") {
+                                navController.navigate("DetailMatch/${match._id}/$eq1/$eq2/${coupeCategorie ?: ""}")
+                            } else {
+                                navController.navigate("SeeMatch/${match._id}/$eq1/$eq2/${coupeCategorie ?: ""}")
                             }
                         }
                     )
@@ -189,18 +185,18 @@ fun MatchCard(match: MatchDto, teamNames: Map<String, String>, isArbitre: Boolea
     Card(
         modifier = Modifier
             .width(280.dp)
-            .then(if (isArbitre && match.statut != "TERMINE") Modifier.clickable { onMatchClick(match) } else Modifier),
+            .clickable { onMatchClick(match) },
         elevation = CardDefaults.cardElevation(2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
-                Text(text = teamNames[match.id_equipe1] ?: "TBD", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text(text = teamNames[match.id_equipe1] ?: "Sera Programmé", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 Text(text = match.score_eq1.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
             Divider()
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
-                Text(text = teamNames[match.id_equipe2] ?: "TBD", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text(text = teamNames[match.id_equipe2] ?: "Sera Programmé", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 Text(text = match.score_eq2.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
         }

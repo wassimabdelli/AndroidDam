@@ -231,7 +231,13 @@ object RetrofitClient {
 
     private fun authInterceptor(context: Context) = Interceptor { chain ->
         val requestBuilder = chain.request().newBuilder()
-        val jwt = getJwtToken(context)
+        var jwt = getJwtToken(context)
+        if (jwt.isNullOrBlank()) {
+            try {
+                val app = context.applicationContext as Application
+                jwt = runBlocking { AuthRepository(app).getToken() }
+            } catch (_: Exception) {}
+        }
         if (!jwt.isNullOrBlank()) {
             requestBuilder.addHeader("Authorization", "Bearer $jwt")
         }
